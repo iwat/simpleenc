@@ -39,7 +39,7 @@ var encCmd = &cobra.Command{
 		fmt.Fprintf(os.Stderr, "key:   %x\n", shake(dk))
 		fmt.Fprintf(os.Stderr, "nonce: %x\n", nonce)
 
-		out := cipherPayload{scryptPayload{salt, scryptN, scryptR, scryptP}, nonce, ciphertext}
+		out := cipherPayload{algoName, scryptPayload{salt, scryptN, scryptR, scryptP}, nonce, ciphertext}
 		out.encode(os.Stdout)
 	},
 }

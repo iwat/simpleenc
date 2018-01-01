@@ -15,6 +15,7 @@ import (
 )
 
 const keyLenAES256 = 32
+const algoName = "SCRYPT-AES-256-GCM"
 
 type b64 []byte
 
@@ -36,12 +37,14 @@ func checkError(err error) {
 }
 
 type cipherB64 struct {
+	Algo       string
 	Scrypt     scryptB64
 	Nonce      b64
 	CipherText b64
 }
 
 type cipherPayload struct {
+	Algo       string
 	Scrypt     scryptPayload
 	Nonce      []byte
 	CipherText []byte
@@ -52,11 +55,11 @@ func decodeCipherPayload(r io.Reader) cipherPayload {
 	dec := json.NewDecoder(r)
 	err := dec.Decode(&b)
 	checkError(err)
-	return cipherPayload{scryptPayload{b.Scrypt.Salt, b.Scrypt.N, b.Scrypt.R, b.Scrypt.P}, b.Nonce, b.CipherText}
+	return cipherPayload{b.Algo, scryptPayload{b.Scrypt.Salt, b.Scrypt.N, b.Scrypt.R, b.Scrypt.P}, b.Nonce, b.CipherText}
 }
 
 func (p cipherPayload) encode(w io.Writer) {
-	b := cipherB64{scryptB64{p.Scrypt.Salt, p.Scrypt.N, p.Scrypt.R, p.Scrypt.P}, p.Nonce, p.CipherText}
+	b := cipherB64{p.Algo, scryptB64{p.Scrypt.Salt, p.Scrypt.N, p.Scrypt.R, p.Scrypt.P}, p.Nonce, p.CipherText}
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	err := enc.Encode(b)
