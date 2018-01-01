@@ -20,13 +20,13 @@ var decCmd = &cobra.Command{
 		checkError(err)
 
 		in := decodeCipherPayload(fd)
-		dk := deriveKey(pwd, in.Salt)
+		dk := deriveKey(pwd, in.Scrypt.Salt, in.Scrypt.N, in.Scrypt.R, in.Scrypt.P, keyLenAES256)
 		aesgcm := newCipher(dk)
 		//cleanByteSlice(dk)
 
 		ciphertext := in.CipherText
 
-		fmt.Fprintf(os.Stderr, "salt:  %x\n", in.Salt)
+		fmt.Fprintf(os.Stderr, "salt:  %x\n", in.Scrypt.Salt)
 		fmt.Fprintf(os.Stderr, "key:   %x\n", shake(dk))
 		fmt.Fprintf(os.Stderr, "nonce: %x\n", in.Nonce)
 

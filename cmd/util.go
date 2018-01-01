@@ -14,6 +14,8 @@ import (
 	"github.com/howeyc/gopass"
 )
 
+const keyLenAES256 = 32
+
 type b64 []byte
 
 func (b b64) MarshalJSON() ([]byte, error) {
@@ -34,13 +36,13 @@ func checkError(err error) {
 }
 
 type cipherB64 struct {
-	Salt       b64
+	Scrypt     scryptB64
 	Nonce      b64
 	CipherText b64
 }
 
 type cipherPayload struct {
-	Salt       []byte
+	Scrypt     scryptPayload
 	Nonce      []byte
 	CipherText []byte
 }
@@ -50,11 +52,11 @@ func decodeCipherPayload(r io.Reader) cipherPayload {
 	dec := json.NewDecoder(r)
 	err := dec.Decode(&b)
 	checkError(err)
-	return cipherPayload{b.Salt, b.Nonce, b.CipherText}
+	return cipherPayload{scryptPayload{b.Scrypt.Salt, b.Scrypt.N, b.Scrypt.R, b.Scrypt.P}, b.Nonce, b.CipherText}
 }
 
 func (p cipherPayload) encode(w io.Writer) {
-	b := cipherB64{p.Salt, p.Nonce, p.CipherText}
+	b := cipherB64{scryptB64{p.Scrypt.Salt, p.Scrypt.N, p.Scrypt.R, p.Scrypt.P}, p.Nonce, p.CipherText}
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	err := enc.Encode(b)
@@ -67,8 +69,8 @@ func cleanByteSlice(b []byte) {
 	}
 }
 
-func deriveKey(pwd, salt []byte) []byte {
-	dk, err := scrypt.Key(pwd, salt, 32768, 8, 1, 32)
+func deriveKey(pwd, salt []byte, N, r, p, keyLen int) []byte {
+	dk, err := scrypt.Key(pwd, salt, N, r, p, keyLen)
 	checkError(err)
 
 	return dk
@@ -89,6 +91,20 @@ func readPass() []byte {
 	checkError(err)
 
 	return pwd
+}
+
+type scryptB64 struct {
+	Salt b64
+	N    int
+	R    int
+	P    int
+}
+
+type scryptPayload struct {
+	Salt []byte
+	N    int
+	R    int
+	P    int
 }
 
 func shake(dk []byte) []byte {

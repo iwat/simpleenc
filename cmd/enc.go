@@ -9,6 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	scryptN = 32768
+	scryptR = 8
+	scryptP = 1
+)
+
 var encCmd = &cobra.Command{
 	Use:   "enc",
 	Short: "Encrypt a plain text to STDOUT",
@@ -17,7 +23,7 @@ var encCmd = &cobra.Command{
 		defer func() { cleanByteSlice(pwd) }()
 
 		salt := readRand(32, "salt")
-		dk := deriveKey(pwd, salt)
+		dk := deriveKey(pwd, salt, scryptN, scryptR, scryptP, keyLenAES256)
 		aesgcm := newCipher(dk)
 		//cleanByteSlice(dk)
 
@@ -33,7 +39,7 @@ var encCmd = &cobra.Command{
 		fmt.Fprintf(os.Stderr, "key:   %x\n", shake(dk))
 		fmt.Fprintf(os.Stderr, "nonce: %x\n", nonce)
 
-		out := cipherPayload{salt, nonce, ciphertext}
+		out := cipherPayload{scryptPayload{salt, scryptN, scryptR, scryptP}, nonce, ciphertext}
 		out.encode(os.Stdout)
 	},
 }
